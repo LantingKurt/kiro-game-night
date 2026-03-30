@@ -12,6 +12,7 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.1"
+    "@supabase/supabase-js": "^2.100.1",
+    "tslib": "^2.8.1"
   }
 }
