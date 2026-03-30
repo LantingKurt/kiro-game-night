@@ -2,11 +2,13 @@ import { createGameState } from './state.js';
 import { updatePlayer, drawPlayer } from './player.js';
 import { updateEnemies, drawEnemies, spawnWave } from './enemy.js';
 import { updateBullets, drawBullets } from './bullet.js';
-import { checkBulletEnemyCollisions, checkPlayerEnemyCollisions } from './collision.js';
+import { checkBulletEnemyCollisions, checkPlayerEnemyCollisions, checkBulletObstacleCollisions, checkPlayerObstacleCollisions } from './collision.js';
 import { checkWaveClear, updateWaveBreak } from './wave.js';
 import { drawHUD } from './hud.js';
-import { drawMenu, drawWaveBreak, drawGameOver, drawLeaderboard } from './screens.js';
+import { drawMenu, drawWaveBreak, drawGameOver, drawLeaderboard, drawPowerUpScreen } from './screens.js';
 import { submitScore, getLeaderboard } from './supabase.js';
+import { handlePowerUpSelection } from './powerup.js';
+import { generateObstacles, drawObstacles } from './obstacle.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -98,7 +100,16 @@ async function loadLeaderboard() {
 }
 
 function fireBullet(state) {
-  const { player, mouse, bullets } = state;
+  const { player, mouse, bullets, powerUps } = state;
+  const now = Date.now();
+  
+  // Check cooldown
+  if (now - player.lastShotTime < player.shootCooldown) {
+    return;
+  }
+  
+  player.lastShotTime = now;
+  
   const centerX = player.x + player.width / 2;
   const centerY = player.y + player.height / 2;
   
@@ -106,21 +117,39 @@ function fireBullet(state) {
   const dy = mouse.y - centerY;
   const dist = Math.sqrt(dx * dx + dy * dy);
   
-  if (dist > 0) {
-    const speed = 400;
-    bullets.push({
-      x: centerX - 2,
-      y: centerY - 2,
-      vx: (dx / dist) * speed,
-      vy: (dy / dist) * speed,
-      width: 4,
-      height: 4,
-      alive: true
-    });
+  if (dist === 0) return;
+  
+  const baseAngle = Math.atan2(dy, dx);
+  const speed = 400;
+  
+  // Check for active power-ups
+  const hasTripleShot = powerUps.some(p => p.id === 'tripleshot');
+  const hasBigBullets = powerUps.some(p => p.id === 'bigbullets');
+  const hasPiercing = powerUps.some(p => p.id === 'piercing');
+  
+  // Triple shot: 3 bullets with 15-degree spread (±0.26 radians)
+  const angles = hasTripleShot 
+    ? [baseAngle - 0.26, baseAngle, baseAngle + 0.26]
+    : [baseAngle];
+  
+  for (const angle of angles) {
+    const bulletSize = hasBigBullets ? 8 : 4;
     
-    // Trigger muzzle flash
-    muzzleFlashTimer = 0.05; // 1 frame at 60fps
+    bullets.push({
+      x: centerX - bulletSize / 2,
+      y: centerY - bulletSize / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      width: bulletSize,
+      height: bulletSize,
+      alive: true,
+      piercing: hasPiercing,
+      damage: hasBigBullets ? 2 : 1
+    });
   }
+  
+  // Trigger muzzle flash
+  muzzleFlashTimer = 0.05; // 1 frame at 60fps
 }
 
 // Game loop
@@ -148,10 +177,13 @@ function gameLoop(currentTime) {
       muzzleFlashTimer -= deltaTime;
     }
     
+    checkBulletObstacleCollisions(state);
+    checkPlayerObstacleCollisions(state);
     checkBulletEnemyCollisions(state);
     checkPlayerEnemyCollisions(state);
     checkWaveClear(state);
     
+    drawObstacles(ctx, state.obstacles);
     drawPlayer(ctx, state.player, state.mouse.x, state.mouse.y);
     drawEnemies(ctx, state.enemies);
     drawBullets(ctx, state.bullets);
@@ -175,15 +207,20 @@ function gameLoop(currentTime) {
     }
     
     drawHUD(ctx, state);
+  } else if (state.screen === 'powerup-selection') {
+    // Render power-up selection screen
+    drawPowerUpScreen(ctx, state);
   } else if (state.screen === 'wave-break') {
     updateWaveBreak(state, deltaTime);
     
     // Spawn wave when break ends
     if (state.screen === 'playing') {
+      generateObstacles(state);
       spawnWave(state);
     }
     
     // Still draw player and bullets during break
+    drawObstacles(ctx, state.obstacles);
     drawPlayer(ctx, state.player, state.mouse.x, state.mouse.y);
     drawBullets(ctx, state.bullets);
     drawHUD(ctx, state);

@@ -36,13 +36,14 @@ export function spawnWave(state) {
       speed: enemySpeed,
       width: 14,
       height: 14,
-      alive: true
+      alive: true,
+      colorTint: Math.floor(Math.random() * 3) // Random value 0-2
     });
   }
 }
 
 export function updateEnemies(state, dt) {
-  const { player, enemies } = state;
+  const { player, enemies, obstacles } = state;
   const playerCenterX = player.x + player.width / 2;
   const playerCenterY = player.y + player.height / 2;
   
@@ -52,13 +53,32 @@ export function updateEnemies(state, dt) {
     const enemyCenterX = enemy.x + enemy.width / 2;
     const enemyCenterY = enemy.y + enemy.height / 2;
     
-    // Direction toward player
-    const dx = playerCenterX - enemyCenterX;
-    const dy = playerCenterY - enemyCenterY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    // Base direction toward player
+    let dx = playerCenterX - enemyCenterX;
+    let dy = playerCenterY - enemyCenterY;
     
+    // Apply obstacle avoidance steering
+    if (obstacles) {
+      for (const obstacle of obstacles) {
+        const obstacleCenterX = obstacle.x + obstacle.width / 2;
+        const obstacleCenterY = obstacle.y + obstacle.height / 2;
+        
+        const obstDx = enemyCenterX - obstacleCenterX;
+        const obstDy = enemyCenterY - obstacleCenterY;
+        const obstDist = Math.sqrt(obstDx * obstDx + obstDy * obstDy);
+        
+        // Apply repulsion if within 60px
+        if (obstDist < 60 && obstDist > 0) {
+          const repulsionStrength = (60 - obstDist) / 60;
+          dx += (obstDx / obstDist) * repulsionStrength * 100;
+          dy += (obstDy / obstDist) * repulsionStrength * 100;
+        }
+      }
+    }
+    
+    // Normalize and apply movement
+    const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist > 0) {
-      // Normalized direction * speed * dt
       enemy.x += (dx / dist) * enemy.speed * dt;
       enemy.y += (dy / dist) * enemy.speed * dt;
     }
@@ -66,21 +86,33 @@ export function updateEnemies(state, dt) {
 }
 
 export function drawEnemies(ctx, enemies) {
+  // Calculate shamble offset for leg animation (shared across all zombies)
+  const shambleOffset = Math.sin(Date.now() / 200) * 2;
+  
   for (const enemy of enemies) {
     if (!enemy.alive) continue;
     
     const x = Math.floor(enemy.x);
     const y = Math.floor(enemy.y);
     
-    // Coral/red body
-    ctx.fillStyle = '#f87171';
-    ctx.fillRect(x, y, 14, 14);
+    // Select body color based on enemy.colorTint (0-2)
+    const colors = ['#2d5016', '#4a5d23', '#3d4a3a'];
+    const bodyColor = colors[enemy.colorTint % 3];
     
-    // Darker border (2px on each side)
-    ctx.fillStyle = '#dc2626';
-    ctx.fillRect(x, y, 14, 2); // top
-    ctx.fillRect(x, y + 12, 14, 2); // bottom
-    ctx.fillRect(x, y, 2, 14); // left
-    ctx.fillRect(x + 12, y, 2, 14); // right
+    // Body (12x14 torso)
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(x + 1, y + 4, 12, 14);
+    
+    // Head (14x8, larger than body)
+    ctx.fillStyle = '#3d5a1f';
+    ctx.fillRect(x, y, 14, 8);
+    
+    // Outstretched arms (18x2)
+    ctx.fillStyle = bodyColor;
+    ctx.fillRect(x - 2, y + 6, 18, 2);
+    
+    // Legs with shamble animation offset (2px wide each)
+    ctx.fillRect(x + 3, y + 14 + shambleOffset, 2, 6);
+    ctx.fillRect(x + 9, y + 14 - shambleOffset, 2, 6);
   }
 }

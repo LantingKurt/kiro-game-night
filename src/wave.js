@@ -1,11 +1,16 @@
+import { generatePowerUpOptions } from './powerup.js';
+
 export function checkWaveClear(state) {
   if (state.screen !== 'playing') return;
   
   // Check if all enemies are cleared
   if (state.enemies.length === 0) {
-    state.screen = 'wave-break';
+    state.screen = 'powerup-selection';
     state.wave += 1;
     state.waveTimer = 3; // 3 second break
+    
+    // Generate power-up options
+    generatePowerUpOptions(state);
   }
 }
 
