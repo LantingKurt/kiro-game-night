@@ -1011,76 +1011,109 @@ export function updateEnemies(state, dt) {
 
 ## Correctness Properties
 
-### Property 1: Player Rotation Correctness
-**Universal Quantification**: ∀ player, mouse positions → player sprite angle = atan2(mouse.y - player.y, mouse.x - player.x)
+*A property is a characteristic or behavior that should hold true across all valid executions of a system-essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-**Verification**: The player sprite's rotation angle must always point toward the mouse cursor, calculated using Math.atan2() for correct quadrant handling.
+### Property 1: Player Rotation Correctness
+
+*For any* player position and mouse position, the player sprite's rotation angle should equal atan2(mouse.y - player.y, mouse.x - player.x)
+
+**Validates: Requirements 1.1**
 
 ---
 
 ### Property 2: Power-Up Uniqueness
-**Universal Quantification**: ∀ power-up selections → |powerUpOptions| = 3 ∧ all elements unique
 
-**Verification**: The power-up selection screen must always present exactly 3 unique power-ups with no duplicates.
+*For any* power-up generation call, the system should produce exactly 3 unique power-up options with no duplicates
+
+**Validates: Requirements 3.2**
 
 ---
 
 ### Property 3: Power-Up Stacking Limits
-**Universal Quantification**: ∀ power-up applications → (speed <= 320) ∧ (shootCooldown >= 80) ∧ (hp <= 6)
 
-**Verification**: Speed Boost cannot exceed 320, Rapid Fire cannot reduce cooldown below 80ms, Shield cannot exceed 6 lives.
+*For any* sequence of power-up applications, player speed should never exceed 320, shoot cooldown should never go below 80ms, and HP should never exceed 6
+
+**Validates: Requirements 3.6, 3.7, 3.8**
 
 ---
 
 ### Property 4: Obstacle Safe Zone
-**Universal Quantification**: ∀ obstacles → distance(obstacle.center, (320, 240)) >= 80
 
-**Verification**: No obstacle center can be placed within 80 pixels of the player spawn point at (320, 240).
+*For any* generated obstacle, the distance from the obstacle center to player spawn point (320, 240) should be at least 80 pixels
+
+**Validates: Requirements 4.5**
 
 ---
 
 ### Property 5: Obstacle Count by Wave
-**Universal Quantification**: 
-- ∀ wave ∈ [1,2] → obstacleCount = 3
-- ∀ wave ∈ [3,5] → obstacleCount = 5
-- ∀ wave >= 6 → obstacleCount = 7
 
-**Verification**: Obstacle count must match the wave-based formula.
+*For any* wave number, the obstacle count should be 3 for waves 1-2, 5 for waves 3-5, and 7 for waves 6+
+
+**Validates: Requirements 4.1, 4.2, 4.3, 4.4**
 
 ---
 
-### Property 6: Bullet-Obstacle Collision
-**Universal Quantification**: ∀ bullets, obstacles → (aabbOverlap(bullet, obstacle) ⟹ bullet.alive = false)
+### Property 6: Obstacle Bounds
 
-**Verification**: Any bullet that overlaps with an obstacle must be marked as dead (unless piercing power-up is active).
+*For any* generated obstacle, all obstacle coordinates should be within canvas bounds (0 <= x <= 600, 0 <= y <= 440)
 
----
-
-### Property 7: Triple Shot Angle Spread
-**Universal Quantification**: ∀ triple shot bullets → angles = [baseAngle - 0.26, baseAngle, baseAngle + 0.26]
-
-**Verification**: Triple shot must fire 3 bullets at exactly 15-degree intervals (0.26 radians).
+**Validates: Requirements 4.7**
 
 ---
 
-### Property 8: Zombie Color Variation
-**Universal Quantification**: ∀ enemies → colorTint ∈ [0, 1, 2]
+### Property 7: Bullet-Obstacle Collision
 
-**Verification**: Each zombie must have a colorTint value of 0, 1, or 2 for color variation.
+*For any* bullet and obstacle, if they overlap using AABB detection, the bullet should be marked as dead
 
----
-
-### Property 9: Shamble Animation Continuity
-**Universal Quantification**: ∀ frames → shambleOffset = sin(Date.now() / 200) * 2
-
-**Verification**: Zombie leg shamble animation must be continuous and synchronized across all zombies.
+**Validates: Requirements 5.1**
 
 ---
 
-### Property 10: Screen Transition on Power-Up Selection
-**Universal Quantification**: ∀ power-up selections → (screen = 'powerup-selection') ⟹ (after selection → screen = 'wave-break')
+### Property 8: Player-Obstacle Collision Resolution
 
-**Verification**: Selecting a power-up must transition the screen from 'powerup-selection' to 'wave-break'.
+*For any* player and obstacle, after collision resolution, the player and obstacle should not overlap
+
+**Validates: Requirements 5.2, 5.3**
+
+---
+
+### Property 9: Triple Shot Angle Spread
+
+*For any* firing action with triple shot active, exactly 3 bullets should be created with angles at [baseAngle - 0.26, baseAngle, baseAngle + 0.26]
+
+**Validates: Requirements 3.9**
+
+---
+
+### Property 10: Zombie Color Variation
+
+*For any* spawned enemy, the colorTint value should be in the range [0, 1, 2]
+
+**Validates: Requirements 2.1**
+
+---
+
+### Property 11: Shamble Animation Synchronization
+
+*For any* frame, all zombies should use the same shamble offset calculated from Date.now()
+
+**Validates: Requirements 2.3, 2.4**
+
+---
+
+### Property 12: Enemy Obstacle Steering
+
+*For any* enemy within 60 pixels of an obstacle, a repulsion force should be applied away from the obstacle, and the final movement vector should be normalized before applying speed
+
+**Validates: Requirements 6.1, 6.2, 6.3, 6.4**
+
+---
+
+### Property 13: Power-Up Click Detection
+
+*For any* mouse click coordinates during power-up selection, the system should correctly identify which card (0, 1, or 2) was clicked based on coordinate boundaries, or return invalid if outside all cards
+
+**Validates: Requirements 7.2**
 
 
 ## Error Handling

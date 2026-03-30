@@ -35,25 +35,46 @@ export function updatePlayer(state, dt) {
   }
 }
 
-export function drawPlayer(ctx, player) {
+export function drawPlayer(ctx, player, mouseX, mouseY) {
   // Flash effect when invincible (skip drawing every other 0.1s)
   if (player.invincible && Math.floor(player.invTimer * 10) % 2 === 0) {
     return;
   }
   
-  const x = Math.floor(player.x);
-  const y = Math.floor(player.y);
+  const centerX = player.x + player.width / 2;
+  const centerY = player.y + player.height / 2;
   
-  // Teal body (12x16)
+  // Calculate angle from player to mouse
+  const dx = mouseX - centerX;
+  const dy = mouseY - centerY;
+  const angle = Math.atan2(dy, dx);
+  
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+  
+  // Draw sprite centered at origin
+  // Body (12x16 torso)
   ctx.fillStyle = '#14b8a6';
-  ctx.fillRect(x + 2, y, 12, 16);
+  ctx.fillRect(-6, -8, 12, 16);
   
-  // Lighter head (12x6)
+  // Head (12x6)
   ctx.fillStyle = '#5eead4';
-  ctx.fillRect(x + 2, y, 12, 6);
+  ctx.fillRect(-6, -8, 12, 6);
   
-  // Dark eye dots (2x2 each)
+  // Eyes (2x2 each)
   ctx.fillStyle = '#0f172a';
-  ctx.fillRect(x + 4, y + 2, 2, 2);
-  ctx.fillRect(x + 10, y + 2, 2, 2);
+  ctx.fillRect(-4, -6, 2, 2);
+  ctx.fillRect(2, -6, 2, 2);
+  
+  // Arms (2px wide, 10px long, on sides)
+  ctx.fillStyle = '#14b8a6';
+  ctx.fillRect(-8, -2, 2, 10);  // left arm
+  ctx.fillRect(6, -2, 2, 10);   // right arm
+  
+  // Legs (2px wide, 8px long)
+  ctx.fillRect(-4, 8, 2, 8);    // left leg
+  ctx.fillRect(2, 8, 2, 8);     // right leg
+  
+  ctx.restore();
 }

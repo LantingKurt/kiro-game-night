@@ -1,6 +1,6 @@
 export function createGameState() {
   return {
-    screen: 'menu', // 'menu' | 'playing' | 'wave-break' | 'gameover' | 'leaderboard'
+    screen: 'menu', // 'menu' | 'playing' | 'wave-break' | 'gameover' | 'leaderboard' | 'powerup-selection'
     wave: 1,
     score: 0,
     player: {
@@ -11,10 +11,15 @@ export function createGameState() {
       invincible: false,
       invTimer: 0,
       width: 16,
-      height: 16
+      height: 16,
+      shootCooldown: 200,  // milliseconds between shots
+      lastShotTime: 0      // timestamp of last shot
     },
-    enemies: [],
-    bullets: [],
+    enemies: [],  // Each enemy has: x, y, speed, width, height, alive, colorTint (0-2 for color variation)
+    bullets: [],  // Each bullet has: x, y, vx, vy, width, height, alive, piercing (boolean), damage (number)
+    obstacles: [],  // Each obstacle has: x, y, width, height
+    powerUps: [],  // Active power-ups: { id, name, description }
+    powerUpOptions: [],  // Current power-up selection choices
     keys: new Set(),
     mouse: { x: 0, y: 0 },
     waveTimer: 0

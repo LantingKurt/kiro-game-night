@@ -152,7 +152,7 @@ function gameLoop(currentTime) {
     checkPlayerEnemyCollisions(state);
     checkWaveClear(state);
     
-    drawPlayer(ctx, state.player);
+    drawPlayer(ctx, state.player, state.mouse.x, state.mouse.y);
     drawEnemies(ctx, state.enemies);
     drawBullets(ctx, state.bullets);
     
@@ -184,7 +184,7 @@ function gameLoop(currentTime) {
     }
     
     // Still draw player and bullets during break
-    drawPlayer(ctx, state.player);
+    drawPlayer(ctx, state.player, state.mouse.x, state.mouse.y);
     drawBullets(ctx, state.bullets);
     drawHUD(ctx, state);
     drawWaveBreak(ctx, state);
