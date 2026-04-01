@@ -75,6 +75,42 @@ export function updateEnemies(state, dt) {
       enemy.x += (dx / dist) * enemy.speed * dt;
       enemy.y += (dy / dist) * enemy.speed * dt;
     }
+
+    // --- New: Hard collision resolution with obstacles ---
+    if (obstacles) {
+      for (const obstacle of obstacles) {
+        if (
+          enemy.x + enemy.width > obstacle.x &&
+          obstacle.x + obstacle.width > enemy.x &&
+          enemy.y + enemy.height > obstacle.y &&
+          obstacle.y + obstacle.height > enemy.y
+        ) {
+          // Calculate overlap on each axis
+          const overlapX = Math.min(
+            enemy.x + enemy.width - obstacle.x,
+            obstacle.x + obstacle.width - enemy.x
+          );
+          const overlapY = Math.min(
+            enemy.y + enemy.height - obstacle.y,
+            obstacle.y + obstacle.height - enemy.y
+          );
+          // Push back on axis with smallest overlap
+          if (overlapX < overlapY) {
+            if (enemy.x < obstacle.x) {
+              enemy.x -= overlapX;
+            } else {
+              enemy.x += overlapX;
+            }
+          } else {
+            if (enemy.y < obstacle.y) {
+              enemy.y -= overlapY;
+            } else {
+              enemy.y += overlapY;
+            }
+          }
+        }
+      }
+    }
   }
 }
 
