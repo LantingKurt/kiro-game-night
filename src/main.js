@@ -105,6 +105,16 @@ window.addEventListener('keydown', (e) => {
   const key = e.key.toLowerCase();
   state.keys.add(key);
 
+  // Pause/unpause with P
+  if (state.screen === 'playing' && key === 'p') {
+    state.paused = !state.paused;
+    if (state.paused) {
+      stopZombieAmbience();
+    } else {
+      startZombieAmbience();
+    }
+    return;
+  }
   // Manual reload while playing when magazine is not full.
   if (state.screen === 'playing' && key === 'r') {
     if (state.player.ammoInMagazine < state.player.magazineSize && !state.player.isReloading) {
@@ -136,6 +146,18 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
   state.keys.delete(e.key.toLowerCase());
+});
+
+// Pause when window loses focus, unpause on focus (optional: only unpause if not manually paused)
+window.addEventListener('blur', () => {
+  if (state.screen === 'playing' && !state.paused) {
+    state.paused = true;
+    stopZombieAmbience();
+  }
+});
+window.addEventListener('focus', () => {
+  // Do not auto-unpause if user paused manually
+  // Optionally, you could set a flag to distinguish manual vs auto pause
 });
 
 canvas.addEventListener('mousemove', (e) => {
@@ -300,7 +322,7 @@ function gameLoop(currentTime) {
   lastTime = currentTime;
 
   updateReloadState(state);
-  
+
   if (prevScreen !== state.screen) {
     if (state.screen === 'gameover' || state.screen === 'menu') {
       stopZombieAmbience();
@@ -318,20 +340,22 @@ function gameLoop(currentTime) {
   if (state.screen === 'menu') {
     drawMenu(ctx, canvas);
   } else if (state.screen === 'playing') {
-    updatePlayer(state, deltaTime);
-    updateEnemies(state, deltaTime);
-    updateBullets(state, deltaTime);
-    updateCamera(cam, state.player);
+    if (!state.paused) {
+      updatePlayer(state, deltaTime);
+      updateEnemies(state, deltaTime);
+      updateBullets(state, deltaTime);
+      updateCamera(cam, state.player);
 
-    if (muzzleFlashTimer > 0) {
-      muzzleFlashTimer -= deltaTime;
+      if (muzzleFlashTimer > 0) {
+        muzzleFlashTimer -= deltaTime;
+      }
+
+      checkBulletObstacleCollisions(state);
+      checkPlayerObstacleCollisions(state);
+      checkBulletEnemyCollisions(state);
+      checkPlayerEnemyCollisions(state);
+      checkWaveClear(state);
     }
-
-    checkBulletObstacleCollisions(state);
-    checkPlayerObstacleCollisions(state);
-    checkBulletEnemyCollisions(state);
-    checkPlayerEnemyCollisions(state);
-    checkWaveClear(state);
 
     ctx.save();
     ctx.translate(-cam.x, -cam.y);
@@ -344,7 +368,7 @@ function gameLoop(currentTime) {
     drawEnemies(ctx, state.enemies);
     drawBullets(ctx, state.bullets);
 
-    if (muzzleFlashTimer > 0) {
+    if (muzzleFlashTimer > 0 && !state.paused) {
       const cx = state.player.x + state.player.width / 2;
       const cy = state.player.y + state.player.height / 2;
       const fdx = worldMouse.x - cx;
@@ -365,6 +389,22 @@ function gameLoop(currentTime) {
     ctx.restore();
 
     drawHUD(ctx, state);
+
+    // Draw pause overlay
+    if (state.paused) {
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 48px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+      ctx.font = '20px monospace';
+      ctx.fillText('Press P to resume', canvas.width / 2, canvas.height / 2 + 40);
+      ctx.restore();
+    }
   } else if (state.screen === 'powerup-selection') {
     drawPowerUpScreen(ctx, state);
   } else if (state.screen === 'wave-break') {

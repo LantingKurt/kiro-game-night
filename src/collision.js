@@ -65,9 +65,10 @@ export function checkBulletObstacleCollisions(state) {
     if (!bullet.alive) continue;
     
     for (const obstacle of obstacles) {
+      if (obstacle.bulletsPassThrough) continue;
       if (aabbOverlap(bullet, obstacle)) {
         bullet.alive = false;
-        break; // bullet can only hit one obstacle
+        break;
       }
     }
   }

@@ -36,6 +36,7 @@ export function createGameState() {
     powerUpOptions: [],
     keys: new Set(),
     mouse: { x: 0, y: 0 },
-    waveTimer: 0
+    waveTimer: 0,
+    paused: false
   };
 }
