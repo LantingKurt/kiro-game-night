@@ -15,6 +15,7 @@ export function drawMenu(ctx, canvas) {
   ctx.fillText('WASD to move, Mouse to aim, Click to shoot', cx, 350);
   ctx.fillText('Press R to reload', cx, 374);
   ctx.fillText('Press P to pause', cx, 398);
+  ctx.fillText('Press Q to quit (when paused)', cx, 422);
   ctx.textAlign = 'left';
 }
 

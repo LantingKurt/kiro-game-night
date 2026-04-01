@@ -115,6 +115,13 @@ window.addEventListener('keydown', (e) => {
     }
     return;
   }
+  // Quit to menu with Q when paused
+  if (state.screen === 'playing' && state.paused && key === 'q') {
+    state.paused = false;
+    state.screen = 'menu';
+    stopZombieAmbience();
+    return;
+  }
   // Manual reload while playing when magazine is not full.
   if (state.screen === 'playing' && key === 'r') {
     if (state.player.ammoInMagazine < state.player.magazineSize && !state.player.isReloading) {
@@ -403,6 +410,7 @@ function gameLoop(currentTime) {
       ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
       ctx.font = '20px monospace';
       ctx.fillText('Press P to resume', canvas.width / 2, canvas.height / 2 + 40);
+      ctx.fillText('Press Q to quit to menu', canvas.width / 2, canvas.height / 2 + 70);
       ctx.restore();
     }
   } else if (state.screen === 'powerup-selection') {

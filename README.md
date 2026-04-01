@@ -31,6 +31,7 @@ Open the URL printed in the terminal (usually `http://localhost:5173`).
 | **Space** (menu) | View leaderboard |
 | **Escape** (leaderboard) | Return to menu |
 | **P** | Pause/Unpause (in-game) |
+| **Q** (when paused) | Quit to menu |
 
 - Click anywhere on the menu screen to start a game.
 - Kill all zombies in a wave to advance.
