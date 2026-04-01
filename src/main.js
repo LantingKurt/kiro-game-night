@@ -167,7 +167,7 @@ canvas.addEventListener('mousemove', (e) => {
 });
 
 canvas.addEventListener('click', (e) => {
-  if (state.screen === 'playing') {
+  if (state.screen === 'playing' && !state.paused) {
     updateReloadState(state);
     fireBullet(state);
   } else if (state.screen === 'menu') {
