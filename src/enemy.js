@@ -5,6 +5,10 @@ export function spawnWave(state) {
   const enemyCount = 3 + (wave * 2);
   const enemySpeed = 60 + (wave * 8);
   
+  // #region agent log
+  fetch('http://127.0.0.1:7755/ingest/9bef909d-f044-40bc-bec6-5c825e351d1c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ca820f'},body:JSON.stringify({sessionId:'ca820f',location:'enemy.js:spawnWave',message:'spawnWave called',data:{wave,enemyCount,enemiesBeforeClear:enemies.length,stateEnemiesSameRef:enemies===state.enemies},hypothesisId:'B',timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+
   enemies.length = 0; // Clear existing enemies
   
   for (let i = 0; i < enemyCount; i++) {
@@ -40,6 +44,10 @@ export function spawnWave(state) {
       colorTint: Math.floor(Math.random() * 3) // Random value 0-2
     });
   }
+
+  // #region agent log
+  fetch('http://127.0.0.1:7755/ingest/9bef909d-f044-40bc-bec6-5c825e351d1c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'ca820f'},body:JSON.stringify({sessionId:'ca820f',location:'enemy.js:spawnWave',message:'spawnWave finished',data:{wave,enemiesAfterSpawn:enemies.length,stateEnemiesLength:state.enemies.length,stateEnemiesSameRef:enemies===state.enemies},hypothesisId:'B',timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
 }
 
 export function updateEnemies(state, dt) {

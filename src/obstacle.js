@@ -36,7 +36,7 @@ export function generateObstacles(state) {
   const safeRadius = 80;
   
   for (let i = 0; i < obstacleCount; i++) {
-    let x, y;
+    let x, y, dist;
     let attempts = 0;
     
     do {
@@ -49,7 +49,7 @@ export function generateObstacles(state) {
       // Calculate distance from obstacle center to player spawn point
       const dx = (x + 20) - playerSpawnX;
       const dy = (y + 20) - playerSpawnY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      dist = Math.sqrt(dx * dx + dy * dy);
       
       attempts++;
       if (attempts > 100) break; // Prevent infinite loop

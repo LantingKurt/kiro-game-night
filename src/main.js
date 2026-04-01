@@ -75,12 +75,30 @@ canvas.addEventListener('mousemove', (e) => {
   state.mouse.y = e.clientY - rect.top;
 });
 
-canvas.addEventListener('click', () => {
+canvas.addEventListener('click', (e) => {
   if (state.screen === 'playing') {
     fireBullet(state);
   } else if (state.screen === 'menu') {
     state.screen = 'playing';
+    generateObstacles(state);
     spawnWave(state);
+  } else if (state.screen === 'powerup-selection') {
+    // Detect clicks on power-up cards
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Cards are positioned at y=180-320, spaced 200px apart horizontally
+    // Card 0: x=20-200, Card 1: x=220-400, Card 2: x=420-600
+    if (y >= 180 && y <= 320) {
+      if (x >= 20 && x < 200) {
+        handlePowerUpSelection(state, 0);
+      } else if (x >= 220 && x < 400) {
+        handlePowerUpSelection(state, 1);
+      } else if (x >= 420 && x < 600) {
+        handlePowerUpSelection(state, 2);
+      }
+    }
   } else if (state.screen === 'gameover' && playerNameInput.trim()) {
     handleScoreSubmit();
   }
@@ -213,18 +231,18 @@ function gameLoop(currentTime) {
   } else if (state.screen === 'wave-break') {
     updateWaveBreak(state, deltaTime);
     
-    // Spawn wave when break ends
+    // Spawn wave when break ends (screen changed to 'playing')
     if (state.screen === 'playing') {
       generateObstacles(state);
       spawnWave(state);
+    } else {
+      // Still in wave-break, draw the break screen
+      drawObstacles(ctx, state.obstacles);
+      drawPlayer(ctx, state.player, state.mouse.x, state.mouse.y);
+      drawBullets(ctx, state.bullets);
+      drawHUD(ctx, state);
+      drawWaveBreak(ctx, state);
     }
-    
-    // Still draw player and bullets during break
-    drawObstacles(ctx, state.obstacles);
-    drawPlayer(ctx, state.player, state.mouse.x, state.mouse.y);
-    drawBullets(ctx, state.bullets);
-    drawHUD(ctx, state);
-    drawWaveBreak(ctx, state);
   } else if (state.screen === 'gameover') {
     drawGameOver(ctx, state, playerNameInput);
   } else if (state.screen === 'leaderboard') {

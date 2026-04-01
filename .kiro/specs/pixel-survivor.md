@@ -10,7 +10,7 @@ REQ-3: Enemies spawn at random positions on the canvas edges at the start of eac
 
 REQ-4: Enemies move toward the player at a constant speed that increases slightly each wave. Enemies are destroyed when hit by a bullet.
 
-REQ-5: Player has 3 lives represented by pixel heart icons in the HUD. Colliding with an enemy removes 1 life. Losing all lives triggers Game Over.
+REQ-5: Player has 3 lives represented by pixel heart icons in the HUD. Col  liding with an enemy removes 1 life. Losing all lives triggers Game Over.
 
 REQ-6: Score increments by 10 per enemy killed. Score is displayed live in the HUD and shown on the Game Over screen.
 
