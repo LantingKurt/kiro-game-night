@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/pixel-survivor/', // Replace with your repo name
+  // GitHub Pages serves this repo from /kiro-game-night/
+  base: '/kiro-game-night/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
