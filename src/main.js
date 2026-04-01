@@ -102,7 +102,15 @@ function drawWorldBorder(ctx) {
 
 // Input handling
 window.addEventListener('keydown', (e) => {
-  state.keys.add(e.key.toLowerCase());
+  const key = e.key.toLowerCase();
+  state.keys.add(key);
+
+  // Manual reload while playing when magazine is not full.
+  if (state.screen === 'playing' && key === 'r') {
+    if (state.player.ammoInMagazine < state.player.magazineSize && !state.player.isReloading) {
+      startReload(state.player, Date.now());
+    }
+  }
   
   // Handle name input on game over screen
   if (state.screen === 'gameover') {
@@ -138,6 +146,7 @@ canvas.addEventListener('mousemove', (e) => {
 
 canvas.addEventListener('click', (e) => {
   if (state.screen === 'playing') {
+    updateReloadState(state);
     fireBullet(state);
   } else if (state.screen === 'menu') {
     state.screen = 'playing';
@@ -148,7 +157,13 @@ canvas.addEventListener('click', (e) => {
     state.player.hp = 3;
     state.player.invincible = false;
     state.player.invTimer = 0;
+    state.player.shootCooldown = 200;
     state.player.lastShotTime = 0;
+    state.player.magazineSize = 10;
+    state.player.ammoInMagazine = state.player.magazineSize;
+    state.player.isReloading = false;
+    state.player.reloadDuration = 1200;
+    state.player.reloadEndTime = 0;
     state.player.moving = false;
     state.bullets = [];
     state.powerUps = [];
@@ -199,6 +214,14 @@ function fireBullet(state) {
   const { player, mouse, bullets, powerUps, camera } = state;
   const now = Date.now();
 
+  if (player.isReloading) {
+    return;
+  }
+
+  if (player.ammoInMagazine <= 0) {
+    return;
+  }
+
   if (now - player.lastShotTime < player.shootCooldown) {
     return;
   }
@@ -246,15 +269,37 @@ function fireBullet(state) {
       damage: hasBigBullets ? 2 : 1
     });
   }
+
+  player.ammoInMagazine -= 1;
   
   muzzleFlashTimer = 0.05;
   playGunShot();
+}
+
+function startReload(player, now) {
+  if (player.isReloading) return;
+  player.isReloading = true;
+  player.reloadEndTime = now + player.reloadDuration;
+  playReload();
+}
+
+function updateReloadState(state) {
+  const { player } = state;
+  if (!player.isReloading) return;
+
+  const now = Date.now();
+  if (now >= player.reloadEndTime) {
+    player.isReloading = false;
+    player.ammoInMagazine = player.magazineSize;
+  }
 }
 
 // Game loop
 function gameLoop(currentTime) {
   const deltaTime = (currentTime - lastTime) / 1000; // convert to seconds
   lastTime = currentTime;
+
+  updateReloadState(state);
   
   if (prevScreen !== state.screen) {
     if (state.screen === 'gameover' || state.screen === 'menu') {
@@ -326,6 +371,10 @@ function gameLoop(currentTime) {
     updateWaveBreak(state, deltaTime);
 
     if (state.screen === 'playing') {
+      // Start each round with a full magazine.
+      state.player.isReloading = false;
+      state.player.reloadEndTime = 0;
+      state.player.ammoInMagazine = state.player.magazineSize;
       generateObstacles(state);
       spawnWave(state);
       playReload();

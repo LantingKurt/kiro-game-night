@@ -27,6 +27,7 @@ Open the URL printed in the terminal (usually `http://localhost:5173`).
 | **WASD** | Move |
 | **Mouse** | Aim |
 | **Left Click** | Shoot |
+| **R** | Reload |
 | **Space** (menu) | View leaderboard |
 | **Escape** (leaderboard) | Return to menu |
 

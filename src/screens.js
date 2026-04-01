@@ -13,6 +13,7 @@ export function drawMenu(ctx, canvas) {
 
   ctx.font = '14px monospace';
   ctx.fillText('WASD to move, Mouse to aim, Click to shoot', cx, 350);
+  ctx.fillText('Press R to reload', cx, 374);
   ctx.textAlign = 'left';
 }
 
