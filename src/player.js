@@ -1,4 +1,8 @@
-import { getSprite, getAnimFrame, PLAYER_ANIMS, GUN_META } from './sprites.js';
+import {
+  getSprite, getAnimFrame,
+  PLAYER_DIR_ANIMS, PLAYER_FRAME, PLAYER_CROP, PLAYER_DRAW_SCALE,
+  angleToDirection, GUN_META
+} from './sprites.js';
 
 export function updatePlayer(state, dt) {
   const { player, keys } = state;
@@ -41,43 +45,43 @@ export function drawPlayer(ctx, player, mouseX, mouseY) {
 
   const centerX = player.x + player.width / 2;
   const centerY = player.y + player.height / 2;
-
   const dx = mouseX - centerX;
   const dy = mouseY - centerY;
   const angle = Math.atan2(dy, dx);
 
-  const anim = player.moving ? PLAYER_ANIMS.run : PLAYER_ANIMS.idle;
+  const dir = angleToDirection(angle);
+  const animSet = player.moving ? PLAYER_DIR_ANIMS.run : PLAYER_DIR_ANIMS.idle;
+  const anim = animSet[dir.base];
   const sprite = getSprite(anim.key);
-
-  ctx.save();
-  ctx.translate(centerX, centerY);
-  ctx.rotate(angle);
 
   if (sprite) {
     const frame = getAnimFrame(anim.frames, anim.frameDuration);
-    const sx = frame * anim.frameWidth;
-    const cropX = 35;
-    const cropY = 12;
-    const cropW = 26;
-    const cropH = 32;
-    const scale = 2;
-    const drawW = cropW * scale;
-    const drawH = cropH * scale;
+    const sx = frame * PLAYER_FRAME.frameWidth;
+    const { x: cropX, y: cropY, w: cropW, h: cropH } = PLAYER_CROP;
+    const drawW = cropW * PLAYER_DRAW_SCALE;
+    const drawH = cropH * PLAYER_DRAW_SCALE;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+
+    if (dir.flip) {
+      ctx.scale(-1, 1);
+    }
+
     ctx.drawImage(
       sprite,
       sx + cropX, cropY, cropW, cropH,
       -drawW / 2, -drawH / 2, drawW, drawH
     );
+    ctx.restore();
   } else {
-    drawPlayerFallback(ctx);
+    drawPlayerFallback(ctx, centerX, centerY, angle);
   }
 
-  drawWeapon(ctx, player);
-
-  ctx.restore();
+  drawWeapon(ctx, player, centerX, centerY, angle);
 }
 
-function drawWeapon(ctx, player) {
+function drawWeapon(ctx, player, centerX, centerY, angle) {
   const meta = GUN_META[player.currentWeapon];
   if (!meta) return;
 
@@ -87,13 +91,25 @@ function drawWeapon(ctx, player) {
   const scale = 1.2;
   const drawW = meta.w * scale;
   const drawH = meta.h * scale;
-  const offsetX = 10;
-  const offsetY = -drawH / 2 + 2;
 
-  ctx.drawImage(weaponSprite, offsetX, offsetY, drawW, drawH);
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+
+  const facingLeft = Math.abs(angle) > Math.PI / 2;
+  if (facingLeft) {
+    ctx.scale(1, -1);
+  }
+
+  ctx.drawImage(weaponSprite, 10, -drawH / 2 + 2, drawW, drawH);
+  ctx.restore();
 }
 
-function drawPlayerFallback(ctx) {
+function drawPlayerFallback(ctx, centerX, centerY, angle) {
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+
   ctx.fillStyle = '#14b8a6';
   ctx.fillRect(-6, -8, 12, 16);
 
@@ -110,4 +126,6 @@ function drawPlayerFallback(ctx) {
 
   ctx.fillRect(-4, 8, 2, 8);
   ctx.fillRect(2, 8, 2, 8);
+
+  ctx.restore();
 }

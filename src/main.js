@@ -9,7 +9,7 @@ import { drawMenu, drawWaveBreak, drawGameOver, drawLeaderboard, drawPowerUpScre
 import { submitScore, getLeaderboard } from './supabase.js';
 import { handlePowerUpSelection } from './powerup.js';
 import { generateObstacles, drawObstacles } from './obstacle.js';
-import { preloadAllSprites } from './sprites.js';
+import { preloadAllSprites, GUN_META } from './sprites.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -145,13 +145,16 @@ function fireBullet(state) {
   
   const baseAngle = Math.atan2(dy, dx);
   const speed = 400;
+
+  const gunMeta = GUN_META[player.currentWeapon];
+  const muzzleDist = 10 + (gunMeta ? gunMeta.w * 1.2 : 12);
+  const muzzleX = centerX + Math.cos(baseAngle) * muzzleDist;
+  const muzzleY = centerY + Math.sin(baseAngle) * muzzleDist;
   
-  // Check for active power-ups
   const hasTripleShot = powerUps.some(p => p.id === 'tripleshot');
   const hasBigBullets = powerUps.some(p => p.id === 'bigbullets');
   const hasPiercing = powerUps.some(p => p.id === 'piercing');
   
-  // Triple shot: 3 bullets with 15-degree spread (±0.26 radians)
   const angles = hasTripleShot 
     ? [baseAngle - 0.26, baseAngle, baseAngle + 0.26]
     : [baseAngle];
@@ -160,8 +163,8 @@ function fireBullet(state) {
     const bulletSize = hasBigBullets ? 8 : 4;
     
     bullets.push({
-      x: centerX - bulletSize / 2,
-      y: centerY - bulletSize / 2,
+      x: muzzleX - bulletSize / 2,
+      y: muzzleY - bulletSize / 2,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       width: bulletSize,
@@ -211,18 +214,18 @@ function gameLoop(currentTime) {
     drawEnemies(ctx, state.enemies);
     drawBullets(ctx, state.bullets);
     
-    // Draw muzzle flash
     if (muzzleFlashTimer > 0) {
-      const centerX = state.player.x + state.player.width / 2;
-      const centerY = state.player.y + state.player.height / 2;
-      const dx = state.mouse.x - centerX;
-      const dy = state.mouse.y - centerY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const cx = state.player.x + state.player.width / 2;
+      const cy = state.player.y + state.player.height / 2;
+      const fdx = state.mouse.x - cx;
+      const fdy = state.mouse.y - cy;
+      const fdist = Math.sqrt(fdx * fdx + fdy * fdy);
       
-      if (dist > 0) {
-        const flashDist = 12;
-        const flashX = centerX + (dx / dist) * flashDist;
-        const flashY = centerY + (dy / dist) * flashDist;
+      if (fdist > 0) {
+        const gunM = GUN_META[state.player.currentWeapon];
+        const flashDist = 10 + (gunM ? gunM.w * 1.2 : 12) + 2;
+        const flashX = cx + (fdx / fdist) * flashDist;
+        const flashY = cy + (fdy / fdist) * flashDist;
         
         ctx.fillStyle = '#fbbf24';
         ctx.fillRect(flashX - 3, flashY - 3, 6, 6);
