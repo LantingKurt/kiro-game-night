@@ -1,31 +1,30 @@
+import { getSprite, getAnimFrame, PLAYER_ANIMS, GUN_META } from './sprites.js';
+
 export function updatePlayer(state, dt) {
   const { player, keys } = state;
-  
-  // WASD movement
+
   let vx = 0;
   let vy = 0;
-  
+
   if (keys.has('w')) vy -= 1;
   if (keys.has('s')) vy += 1;
   if (keys.has('a')) vx -= 1;
   if (keys.has('d')) vx += 1;
-  
-  // Normalize diagonal movement
+
   if (vx !== 0 && vy !== 0) {
     const len = Math.sqrt(vx * vx + vy * vy);
     vx /= len;
     vy /= len;
   }
-  
-  // Apply velocity
+
+  player.moving = vx !== 0 || vy !== 0;
+
   player.x += vx * player.speed * dt;
   player.y += vy * player.speed * dt;
-  
-  // Clamp to canvas bounds
+
   player.x = Math.max(0, Math.min(640 - player.width, player.x));
   player.y = Math.max(0, Math.min(480 - player.height, player.y));
-  
-  // Invincibility timer countdown
+
   if (player.invincible) {
     player.invTimer -= dt;
     if (player.invTimer <= 0) {
@@ -36,45 +35,79 @@ export function updatePlayer(state, dt) {
 }
 
 export function drawPlayer(ctx, player, mouseX, mouseY) {
-  // Flash effect when invincible (skip drawing every other 0.1s)
   if (player.invincible && Math.floor(player.invTimer * 10) % 2 === 0) {
     return;
   }
-  
+
   const centerX = player.x + player.width / 2;
   const centerY = player.y + player.height / 2;
-  
-  // Calculate angle from player to mouse
+
   const dx = mouseX - centerX;
   const dy = mouseY - centerY;
   const angle = Math.atan2(dy, dx);
-  
+
+  const anim = player.moving ? PLAYER_ANIMS.run : PLAYER_ANIMS.idle;
+  const sprite = getSprite(anim.key);
+
   ctx.save();
   ctx.translate(centerX, centerY);
   ctx.rotate(angle);
-  
-  // Draw sprite centered at origin
-  // Body (12x16 torso)
+
+  if (sprite) {
+    const frame = getAnimFrame(anim.frames, anim.frameDuration);
+    const sx = frame * anim.frameWidth;
+    const cropX = 35;
+    const cropY = 12;
+    const cropW = 26;
+    const cropH = 32;
+    const scale = 2;
+    const drawW = cropW * scale;
+    const drawH = cropH * scale;
+    ctx.drawImage(
+      sprite,
+      sx + cropX, cropY, cropW, cropH,
+      -drawW / 2, -drawH / 2, drawW, drawH
+    );
+  } else {
+    drawPlayerFallback(ctx);
+  }
+
+  drawWeapon(ctx, player);
+
+  ctx.restore();
+}
+
+function drawWeapon(ctx, player) {
+  const meta = GUN_META[player.currentWeapon];
+  if (!meta) return;
+
+  const weaponSprite = getSprite(meta.key);
+  if (!weaponSprite) return;
+
+  const scale = 1.2;
+  const drawW = meta.w * scale;
+  const drawH = meta.h * scale;
+  const offsetX = 10;
+  const offsetY = -drawH / 2 + 2;
+
+  ctx.drawImage(weaponSprite, offsetX, offsetY, drawW, drawH);
+}
+
+function drawPlayerFallback(ctx) {
   ctx.fillStyle = '#14b8a6';
   ctx.fillRect(-6, -8, 12, 16);
-  
-  // Head (12x6)
+
   ctx.fillStyle = '#5eead4';
   ctx.fillRect(-6, -8, 12, 6);
-  
-  // Eyes (2x2 each)
+
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(-4, -6, 2, 2);
   ctx.fillRect(2, -6, 2, 2);
-  
-  // Arms (2px wide, 10px long, on sides)
+
   ctx.fillStyle = '#14b8a6';
-  ctx.fillRect(-8, -2, 2, 10);  // left arm
-  ctx.fillRect(6, -2, 2, 10);   // right arm
-  
-  // Legs (2px wide, 8px long)
-  ctx.fillRect(-4, 8, 2, 8);    // left leg
-  ctx.fillRect(2, 8, 2, 8);     // right leg
-  
-  ctx.restore();
+  ctx.fillRect(-8, -2, 2, 10);
+  ctx.fillRect(6, -2, 2, 10);
+
+  ctx.fillRect(-4, 8, 2, 8);
+  ctx.fillRect(2, 8, 2, 8);
 }

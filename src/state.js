@@ -12,8 +12,10 @@ export function createGameState() {
       invTimer: 0,
       width: 16,
       height: 16,
-      shootCooldown: 200,  // milliseconds between shots
-      lastShotTime: 0      // timestamp of last shot
+      shootCooldown: 200,
+      lastShotTime: 0,
+      currentWeapon: 'luger',
+      moving: false,
     },
     enemies: [],  // Each enemy has: x, y, speed, width, height, alive, colorTint (0-2 for color variation)
     bullets: [],  // Each bullet has: x, y, vx, vy, width, height, alive, piercing (boolean), damage (number)

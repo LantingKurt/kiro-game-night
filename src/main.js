@@ -9,9 +9,15 @@ import { drawMenu, drawWaveBreak, drawGameOver, drawLeaderboard, drawPowerUpScre
 import { submitScore, getLeaderboard } from './supabase.js';
 import { handlePowerUpSelection } from './powerup.js';
 import { generateObstacles, drawObstacles } from './obstacle.js';
+import { preloadAllSprites } from './sprites.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+
+ctx.imageSmoothingEnabled = false;
+ctx.mozImageSmoothingEnabled = false;
+ctx.webkitImageSmoothingEnabled = false;
+ctx.msImageSmoothingEnabled = false;
 
 const state = createGameState();
 let lastTime = 0;
@@ -175,11 +181,10 @@ function gameLoop(currentTime) {
   const deltaTime = (currentTime - lastTime) / 1000; // convert to seconds
   lastTime = currentTime;
   
-  // Clear canvas
   ctx.fillStyle = '#0d1117';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  // Draw pixel grid background
+  ctx.imageSmoothingEnabled = false;
+
   drawPixelGrid(ctx);
   
   // Update and render based on screen state
@@ -252,10 +257,18 @@ function gameLoop(currentTime) {
   requestAnimationFrame(gameLoop);
 }
 
-// Start the game loop
-requestAnimationFrame((time) => {
-  lastTime = time;
-  requestAnimationFrame(gameLoop);
+preloadAllSprites().then(() => {
+  console.log('Sprites loaded, starting game loop');
+  requestAnimationFrame((time) => {
+    lastTime = time;
+    requestAnimationFrame(gameLoop);
+  });
+}).catch(() => {
+  console.warn('Sprite loading had issues, starting with fallback rendering');
+  requestAnimationFrame((time) => {
+    lastTime = time;
+    requestAnimationFrame(gameLoop);
+  });
 });
 
 console.log('Pixel Survivor initialized');
