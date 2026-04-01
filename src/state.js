@@ -1,11 +1,17 @@
+import { WORLD_W, WORLD_H, VIEW_W, VIEW_H } from './camera.js';
+
 export function createGameState() {
   return {
-    screen: 'menu', // 'menu' | 'playing' | 'wave-break' | 'gameover' | 'leaderboard' | 'powerup-selection'
+    screen: 'menu',
     wave: 1,
     score: 0,
+    camera: {
+      x: WORLD_W / 2 - VIEW_W / 2,
+      y: WORLD_H / 2 - VIEW_H / 2,
+    },
     player: {
-      x: 320 - 8, // centered
-      y: 240 - 8,
+      x: WORLD_W / 2 - 8,
+      y: WORLD_H / 2 - 8,
       speed: 180,
       hp: 3,
       invincible: false,
@@ -17,11 +23,11 @@ export function createGameState() {
       currentWeapon: 'luger',
       moving: false,
     },
-    enemies: [],  // Each enemy has: x, y, speed, width, height, alive, colorTint (0-2 for color variation)
-    bullets: [],  // Each bullet has: x, y, vx, vy, width, height, alive, piercing (boolean), damage (number)
-    obstacles: [],  // Each obstacle has: x, y, width, height
-    powerUps: [],  // Active power-ups: { id, name, description }
-    powerUpOptions: [],  // Current power-up selection choices
+    enemies: [],
+    bullets: [],
+    obstacles: [],
+    powerUps: [],
+    powerUpOptions: [],
     keys: new Set(),
     mouse: { x: 0, y: 0 },
     waveTimer: 0

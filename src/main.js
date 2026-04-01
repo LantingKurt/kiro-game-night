@@ -11,6 +11,7 @@ import { handlePowerUpSelection } from './powerup.js';
 import { generateObstacles, drawObstacles } from './obstacle.js';
 import { preloadAllSprites, GUN_META } from './sprites.js';
 import { preloadAudio, playGunShot, playReload, startZombieAmbience, stopZombieAmbience } from './audio.js';
+import { WORLD_W, WORLD_H, VIEW_W, VIEW_H, updateCamera, screenToWorld } from './camera.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -26,23 +27,26 @@ let playerNameInput = '';
 let muzzleFlashTimer = 0;
 let prevScreen = 'menu';
 
-function drawPixelGrid(ctx) {
+function drawPixelGrid(ctx, cam) {
   ctx.strokeStyle = '#161b22';
   ctx.lineWidth = 1;
-  
-  // Vertical lines
-  for (let x = 0; x <= 640; x += 32) {
+
+  const startX = Math.floor(cam.x / 32) * 32;
+  const endX = cam.x + VIEW_W;
+  const startY = Math.floor(cam.y / 32) * 32;
+  const endY = cam.y + VIEW_H;
+
+  for (let x = startX; x <= endX; x += 32) {
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, 480);
+    ctx.moveTo(x, cam.y);
+    ctx.lineTo(x, endY);
     ctx.stroke();
   }
-  
-  // Horizontal lines
-  for (let y = 0; y <= 480; y += 32) {
+
+  for (let y = startY; y <= endY; y += 32) {
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(640, y);
+    ctx.moveTo(cam.x, y);
+    ctx.lineTo(endX, y);
     ctx.stroke();
   }
 }
@@ -93,20 +97,22 @@ canvas.addEventListener('click', (e) => {
     playReload();
     startZombieAmbience();
   } else if (state.screen === 'powerup-selection') {
-    // Detect clicks on power-up cards
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    // Cards are positioned at y=180-320, spaced 200px apart horizontally
-    // Card 0: x=20-200, Card 1: x=220-400, Card 2: x=420-600
-    if (y >= 180 && y <= 320) {
-      if (x >= 20 && x < 200) {
-        handlePowerUpSelection(state, 0);
-      } else if (x >= 220 && x < 400) {
-        handlePowerUpSelection(state, 1);
-      } else if (x >= 420 && x < 600) {
-        handlePowerUpSelection(state, 2);
+
+    const cardW = 170, cardH = 190, gap = 18;
+    const totalW = cardW * 3 + gap * 2;
+    const sx = (VIEW_W - totalW) / 2;
+    const sy = 110;
+
+    if (y >= sy && y <= sy + cardH) {
+      for (let i = 0; i < 3; i++) {
+        const cx = sx + i * (cardW + gap);
+        if (x >= cx && x < cx + cardW) {
+          handlePowerUpSelection(state, i);
+          break;
+        }
       }
     }
   } else if (state.screen === 'gameover' && playerNameInput.trim()) {
@@ -128,25 +134,25 @@ async function loadLeaderboard() {
 }
 
 function fireBullet(state) {
-  const { player, mouse, bullets, powerUps } = state;
+  const { player, mouse, bullets, powerUps, camera } = state;
   const now = Date.now();
-  
-  // Check cooldown
+
   if (now - player.lastShotTime < player.shootCooldown) {
     return;
   }
-  
+
   player.lastShotTime = now;
-  
+
   const centerX = player.x + player.width / 2;
   const centerY = player.y + player.height / 2;
-  
-  const dx = mouse.x - centerX;
-  const dy = mouse.y - centerY;
+
+  const worldMouse = screenToWorld(mouse.x, mouse.y, camera);
+  const dx = worldMouse.x - centerX;
+  const dy = worldMouse.y - centerY;
   const dist = Math.sqrt(dx * dx + dy * dy);
-  
+
   if (dist === 0) return;
-  
+
   const baseAngle = Math.atan2(dy, dx);
   const speed = 400;
 
@@ -199,65 +205,78 @@ function gameLoop(currentTime) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.imageSmoothingEnabled = false;
 
-  drawPixelGrid(ctx);
-  
+  const cam = state.camera;
+  const worldMouse = screenToWorld(state.mouse.x, state.mouse.y, cam);
+
   if (state.screen === 'menu') {
+    drawPixelGrid(ctx, { x: 0, y: 0 });
     drawMenu(ctx, canvas);
   } else if (state.screen === 'playing') {
     updatePlayer(state, deltaTime);
     updateEnemies(state, deltaTime);
     updateBullets(state, deltaTime);
-    
-    // Update muzzle flash timer
+    updateCamera(cam, state.player);
+
     if (muzzleFlashTimer > 0) {
       muzzleFlashTimer -= deltaTime;
     }
-    
+
     checkBulletObstacleCollisions(state);
     checkPlayerObstacleCollisions(state);
     checkBulletEnemyCollisions(state);
     checkPlayerEnemyCollisions(state);
     checkWaveClear(state);
-    
+
+    ctx.save();
+    ctx.translate(-cam.x, -cam.y);
+
+    drawPixelGrid(ctx, cam);
     drawObstacles(ctx, state.obstacles);
-    drawPlayer(ctx, state.player, state.mouse.x, state.mouse.y);
+    drawPlayer(ctx, state.player, worldMouse.x, worldMouse.y);
     drawEnemies(ctx, state.enemies);
     drawBullets(ctx, state.bullets);
-    
+
     if (muzzleFlashTimer > 0) {
       const cx = state.player.x + state.player.width / 2;
       const cy = state.player.y + state.player.height / 2;
-      const fdx = state.mouse.x - cx;
-      const fdy = state.mouse.y - cy;
+      const fdx = worldMouse.x - cx;
+      const fdy = worldMouse.y - cy;
       const fdist = Math.sqrt(fdx * fdx + fdy * fdy);
-      
+
       if (fdist > 0) {
         const gunM = GUN_META[state.player.currentWeapon];
         const flashDist = 10 + (gunM ? gunM.w * 1.2 : 12) + 2;
         const flashX = cx + (fdx / fdist) * flashDist;
         const flashY = cy + (fdy / fdist) * flashDist;
-        
+
         ctx.fillStyle = '#fbbf24';
         ctx.fillRect(flashX - 1, flashY - 1, 3, 3);
       }
     }
-    
+
+    ctx.restore();
+
     drawHUD(ctx, state);
   } else if (state.screen === 'powerup-selection') {
-    // Render power-up selection screen
     drawPowerUpScreen(ctx, state);
   } else if (state.screen === 'wave-break') {
     updateWaveBreak(state, deltaTime);
-    
+
     if (state.screen === 'playing') {
       generateObstacles(state);
       spawnWave(state);
       playReload();
     } else {
-      // Still in wave-break, draw the break screen
+      ctx.save();
+      ctx.translate(-cam.x, -cam.y);
+
+      drawPixelGrid(ctx, cam);
       drawObstacles(ctx, state.obstacles);
-      drawPlayer(ctx, state.player, state.mouse.x, state.mouse.y);
+      drawPlayer(ctx, state.player, worldMouse.x, worldMouse.y);
       drawBullets(ctx, state.bullets);
+
+      ctx.restore();
+
       drawHUD(ctx, state);
       drawWaveBreak(ctx, state);
     }

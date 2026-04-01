@@ -3,6 +3,7 @@ import {
   PLAYER_DIR_ANIMS, PLAYER_FRAME, PLAYER_CROP, PLAYER_DRAW_SCALE,
   angleToDirection, GUN_META
 } from './sprites.js';
+import { WORLD_W, WORLD_H } from './camera.js';
 
 export function updatePlayer(state, dt) {
   const { player, keys } = state;
@@ -26,8 +27,8 @@ export function updatePlayer(state, dt) {
   player.x += vx * player.speed * dt;
   player.y += vy * player.speed * dt;
 
-  player.x = Math.max(0, Math.min(640 - player.width, player.x));
-  player.y = Math.max(0, Math.min(480 - player.height, player.y));
+  player.x = Math.max(0, Math.min(WORLD_W - player.width, player.x));
+  player.y = Math.max(0, Math.min(WORLD_H - player.height, player.y));
 
   if (player.invincible) {
     player.invTimer -= dt;

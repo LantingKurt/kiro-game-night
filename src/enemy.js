@@ -1,7 +1,10 @@
 import { getSprite, getAnimFrame, ZOMBIE_SHEET } from './sprites.js';
+import { VIEW_W, VIEW_H } from './camera.js';
+
+const SPAWN_MARGIN = 50;
 
 export function spawnWave(state) {
-  const { wave, enemies } = state;
+  const { wave, enemies, camera } = state;
   const enemyCount = 3 + (wave * 2);
   const enemySpeed = 60 + (wave * 8);
 
@@ -10,12 +13,14 @@ export function spawnWave(state) {
   for (let i = 0; i < enemyCount; i++) {
     const edge = Math.floor(Math.random() * 4);
     let x, y;
+    const camX = camera.x;
+    const camY = camera.y;
 
     switch (edge) {
-      case 0: x = Math.random() * 640; y = 0; break;
-      case 1: x = 640 - 14; y = Math.random() * 480; break;
-      case 2: x = Math.random() * 640; y = 480 - 14; break;
-      case 3: x = 0; y = Math.random() * 480; break;
+      case 0: x = camX + Math.random() * VIEW_W; y = camY - SPAWN_MARGIN; break;
+      case 1: x = camX + VIEW_W + SPAWN_MARGIN; y = camY + Math.random() * VIEW_H; break;
+      case 2: x = camX + Math.random() * VIEW_W; y = camY + VIEW_H + SPAWN_MARGIN; break;
+      case 3: x = camX - SPAWN_MARGIN; y = camY + Math.random() * VIEW_H; break;
     }
 
     enemies.push({

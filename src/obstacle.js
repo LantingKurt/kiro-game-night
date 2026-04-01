@@ -1,17 +1,19 @@
-const BLOCK = 20;
+import { WORLD_W, WORLD_H } from './camera.js';
+
+const BLOCK = 24;
 
 const SHAPES = [
-  { name: 'I', cells: [[0,0],[1,0],[2,0],[3,0]] },
-  { name: 'L', cells: [[0,0],[0,1],[1,1],[2,1]] },
-  { name: 'J', cells: [[2,0],[0,1],[1,1],[2,1]] },
-  { name: 'T', cells: [[1,0],[0,1],[1,1],[2,1]] },
-  { name: 'S', cells: [[1,0],[2,0],[0,1],[1,1]] },
-  { name: 'Z', cells: [[0,0],[1,0],[1,1],[2,1]] },
-  { name: 'O', cells: [[0,0],[1,0],[0,1],[1,1]] },
-  { name: 'Plus', cells: [[1,0],[0,1],[1,1],[2,1],[1,2]] },
-  { name: 'BigL', cells: [[0,0],[0,1],[0,2],[1,2],[2,2]] },
-  { name: 'Line3', cells: [[0,0],[1,0],[2,0]] },
-  { name: 'Corner', cells: [[0,0],[1,0],[0,1]] },
+  { name: 'LongWall', cells: [[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0]] },
+  { name: 'Barrier',  cells: [[0,0],[1,0],[2,0],[3,0],[4,0],[5,0]] },
+  { name: 'BigL',     cells: [[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[2,4],[3,4]] },
+  { name: 'BigT',     cells: [[0,0],[1,0],[2,0],[3,0],[4,0],[2,1],[2,2]] },
+  { name: 'U-shape',  cells: [[0,0],[0,1],[0,2],[0,3],[1,3],[2,3],[2,2],[2,1],[2,0]] },
+  { name: 'Zigzag',   cells: [[0,0],[1,0],[1,1],[2,1],[2,2],[3,2],[3,3]] },
+  { name: 'Wall5',    cells: [[0,0],[1,0],[2,0],[3,0],[4,0]] },
+  { name: 'Hook',     cells: [[0,0],[1,0],[2,0],[3,0],[3,1],[3,2]] },
+  { name: 'Cross',    cells: [[2,0],[2,1],[0,2],[1,2],[2,2],[3,2],[4,2],[2,3],[2,4]] },
+  { name: 'Corner',   cells: [[0,0],[1,0],[2,0],[0,1],[0,2]] },
+  { name: 'O',        cells: [[0,0],[1,0],[0,1],[1,1]] },
 ];
 
 function rotateShape(cells, times) {
@@ -34,15 +36,15 @@ function shapeBounds(cells) {
 export function generateObstacles(state) {
   const wave = state.wave;
   let shapeCount;
-  if (wave <= 2) shapeCount = 2;
-  else if (wave <= 5) shapeCount = 3;
-  else shapeCount = 4;
+  if (wave <= 2) shapeCount = 4;
+  else if (wave <= 5) shapeCount = 6;
+  else shapeCount = 8;
 
   state.obstacles = [];
   const placed = [];
-  const playerSpawnX = 320;
-  const playerSpawnY = 240;
-  const safeRadius = 100;
+  const spawnX = WORLD_W / 2;
+  const spawnY = WORLD_H / 2;
+  const safeRadius = 140;
 
   for (let i = 0; i < shapeCount; i++) {
     const template = SHAPES[Math.floor(Math.random() * SHAPES.length)];
@@ -55,14 +57,14 @@ export function generateObstacles(state) {
 
     do {
       valid = true;
-      ox = Math.floor(Math.random() * (640 - bounds.w));
-      oy = Math.floor(Math.random() * (480 - bounds.h));
+      ox = Math.floor(Math.random() * (WORLD_W - bounds.w));
+      oy = Math.floor(Math.random() * (WORLD_H - bounds.h));
 
       for (const [cx, cy] of cells) {
         const bx = ox + cx * BLOCK + BLOCK / 2;
         const by = oy + cy * BLOCK + BLOCK / 2;
-        const dx = bx - playerSpawnX;
-        const dy = by - playerSpawnY;
+        const dx = bx - spawnX;
+        const dy = by - spawnY;
         if (Math.sqrt(dx * dx + dy * dy) < safeRadius) { valid = false; break; }
       }
 
@@ -85,7 +87,7 @@ export function generateObstacles(state) {
       }
 
       attempts++;
-      if (attempts > 200) break;
+      if (attempts > 300) break;
     } while (!valid);
 
     if (!valid) continue;

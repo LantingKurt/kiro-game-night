@@ -1,4 +1,5 @@
 import { getSprite } from './sprites.js';
+import { WORLD_W, WORLD_H } from './camera.js';
 
 export function updateBullets(state, dt) {
   const { bullets } = state;
@@ -9,7 +10,7 @@ export function updateBullets(state, dt) {
     bullet.x += bullet.vx * dt;
     bullet.y += bullet.vy * dt;
 
-    if (bullet.x < 0 || bullet.x > 640 || bullet.y < 0 || bullet.y > 480) {
+    if (bullet.x < 0 || bullet.x > WORLD_W || bullet.y < 0 || bullet.y > WORLD_H) {
       bullet.alive = false;
     }
   }

@@ -1,22 +1,21 @@
+import { VIEW_W, VIEW_H } from './camera.js';
+
 export function drawHUD(ctx, state) {
   ctx.fillStyle = '#ffffff';
   ctx.font = '16px monospace';
-  
-  // Score (top-left)
+
   ctx.fillText(`Score: ${state.score}`, 10, 20);
-  
-  // Wave (top-right)
+
   const waveText = `Wave: ${state.wave}`;
   const waveWidth = ctx.measureText(waveText).width;
-  ctx.fillText(waveText, 640 - waveWidth - 10, 20);
-  
-  // Hearts (bottom-left)
+  ctx.fillText(waveText, VIEW_W - waveWidth - 10, 20);
+
   drawHearts(ctx, state.player.hp);
 }
 
 function drawHearts(ctx, hp) {
   const startX = 10;
-  const startY = 480 - 20;
+  const startY = VIEW_H - 20;
   const heartSize = 12;
   const spacing = 16;
   
