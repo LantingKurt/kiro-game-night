@@ -83,7 +83,7 @@ export function drawEnemies(ctx, enemies) {
       const sx = frame * ZOMBIE_SHEET.frameWidth;
       const sy = ZOMBIE_SHEET.walkRow * ZOMBIE_SHEET.frameHeight;
 
-      const drawSize = 36;
+      const drawSize = 48;
 
       ctx.save();
       if (enemy.colorTint > 0) {

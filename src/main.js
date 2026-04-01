@@ -10,6 +10,7 @@ import { submitScore, getLeaderboard } from './supabase.js';
 import { handlePowerUpSelection } from './powerup.js';
 import { generateObstacles, drawObstacles } from './obstacle.js';
 import { preloadAllSprites, GUN_META } from './sprites.js';
+import { preloadAudio, playGunShot, playReload, startZombieAmbience, stopZombieAmbience } from './audio.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -23,6 +24,7 @@ const state = createGameState();
 let lastTime = 0;
 let playerNameInput = '';
 let muzzleFlashTimer = 0;
+let prevScreen = 'menu';
 
 function drawPixelGrid(ctx) {
   ctx.strokeStyle = '#161b22';
@@ -88,6 +90,8 @@ canvas.addEventListener('click', (e) => {
     state.screen = 'playing';
     generateObstacles(state);
     spawnWave(state);
+    playReload();
+    startZombieAmbience();
   } else if (state.screen === 'powerup-selection') {
     // Detect clicks on power-up cards
     const rect = canvas.getBoundingClientRect();
@@ -175,8 +179,8 @@ function fireBullet(state) {
     });
   }
   
-  // Trigger muzzle flash
-  muzzleFlashTimer = 0.05; // 1 frame at 60fps
+  muzzleFlashTimer = 0.05;
+  playGunShot();
 }
 
 // Game loop
@@ -184,13 +188,19 @@ function gameLoop(currentTime) {
   const deltaTime = (currentTime - lastTime) / 1000; // convert to seconds
   lastTime = currentTime;
   
+  if (prevScreen !== state.screen) {
+    if (state.screen === 'gameover' || state.screen === 'menu') {
+      stopZombieAmbience();
+    }
+    prevScreen = state.screen;
+  }
+
   ctx.fillStyle = '#0d1117';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.imageSmoothingEnabled = false;
 
   drawPixelGrid(ctx);
   
-  // Update and render based on screen state
   if (state.screen === 'menu') {
     drawMenu(ctx, canvas);
   } else if (state.screen === 'playing') {
@@ -228,7 +238,7 @@ function gameLoop(currentTime) {
         const flashY = cy + (fdy / fdist) * flashDist;
         
         ctx.fillStyle = '#fbbf24';
-        ctx.fillRect(flashX - 3, flashY - 3, 6, 6);
+        ctx.fillRect(flashX - 1, flashY - 1, 3, 3);
       }
     }
     
@@ -239,10 +249,10 @@ function gameLoop(currentTime) {
   } else if (state.screen === 'wave-break') {
     updateWaveBreak(state, deltaTime);
     
-    // Spawn wave when break ends (screen changed to 'playing')
     if (state.screen === 'playing') {
       generateObstacles(state);
       spawnWave(state);
+      playReload();
     } else {
       // Still in wave-break, draw the break screen
       drawObstacles(ctx, state.obstacles);
@@ -260,14 +270,14 @@ function gameLoop(currentTime) {
   requestAnimationFrame(gameLoop);
 }
 
-preloadAllSprites().then(() => {
-  console.log('Sprites loaded, starting game loop');
+Promise.all([preloadAllSprites(), preloadAudio()]).then(() => {
+  console.log('Assets loaded, starting game loop');
   requestAnimationFrame((time) => {
     lastTime = time;
     requestAnimationFrame(gameLoop);
   });
 }).catch(() => {
-  console.warn('Sprite loading had issues, starting with fallback rendering');
+  console.warn('Asset loading had issues, starting with fallback rendering');
   requestAnimationFrame((time) => {
     lastTime = time;
     requestAnimationFrame(gameLoop);
