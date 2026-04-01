@@ -8,7 +8,7 @@ import { drawHUD } from './hud.js';
 import { drawMenu, drawWaveBreak, drawGameOver, drawLeaderboard, drawPowerUpScreen } from './screens.js';
 import { submitScore, getLeaderboard } from './supabase.js';
 import { handlePowerUpSelection } from './powerup.js';
-import { generateObstacles, drawObstacles } from './obstacle.js';
+import { generateObstacles, drawObstacles, drawPaths } from './obstacle.js';
 import { preloadAllSprites, GUN_META } from './sprites.js';
 import { preloadAudio, playGunShot, playReload, startZombieAmbience, stopZombieAmbience } from './audio.js';
 import { WORLD_W, WORLD_H, VIEW_W, VIEW_H, updateCamera, screenToWorld } from './camera.js';
@@ -27,28 +27,77 @@ let playerNameInput = '';
 let muzzleFlashTimer = 0;
 let prevScreen = 'menu';
 
-function drawPixelGrid(ctx, cam) {
-  ctx.strokeStyle = '#161b22';
+const TILE = 32;
+let grassPattern = null;
+
+function buildGrassTile() {
+  const tc = document.createElement('canvas');
+  tc.width = TILE;
+  tc.height = TILE;
+  const t = tc.getContext('2d');
+
+  t.fillStyle = '#2d5a1e';
+  t.fillRect(0, 0, TILE, TILE);
+
+  const seeded = (x, y, m) => ((x * 2654435761 + y * 40503) ^ m) >>> 0;
+
+  for (let py = 0; py < TILE; py += 2) {
+    for (let px = 0; px < TILE; px += 2) {
+      const h = seeded(px, py, 7919) % 100;
+      if (h < 30) {
+        t.fillStyle = '#346b23';
+        t.fillRect(px, py, 2, 2);
+      } else if (h < 50) {
+        t.fillStyle = '#264e18';
+        t.fillRect(px, py, 2, 2);
+      } else if (h < 58) {
+        t.fillStyle = '#3a7a2a';
+        t.fillRect(px, py, 1, 2);
+      } else if (h < 62) {
+        t.fillStyle = '#1f4212';
+        t.fillRect(px, py, 2, 1);
+      }
+    }
+  }
+
+  for (let py = 0; py < TILE; py += 4) {
+    for (let px = 0; px < TILE; px += 4) {
+      const v = seeded(px, py, 131) % 100;
+      if (v < 8) {
+        t.fillStyle = '#4a8f35';
+        t.fillRect(px + 1, py, 1, 3);
+      } else if (v < 12) {
+        t.fillStyle = '#3e7828';
+        t.fillRect(px, py + 1, 1, 2);
+      }
+    }
+  }
+
+  return tc;
+}
+
+function initGrassPattern() {
+  const tile = buildGrassTile();
+  grassPattern = ctx.createPattern(tile, 'repeat');
+}
+
+function drawGround(ctx, cam) {
+  if (!grassPattern) initGrassPattern();
+  ctx.fillStyle = grassPattern;
+  const x0 = Math.floor(cam.x / TILE) * TILE;
+  const y0 = Math.floor(cam.y / TILE) * TILE;
+  const x1 = Math.min(cam.x + VIEW_W + TILE, WORLD_W);
+  const y1 = Math.min(cam.y + VIEW_H + TILE, WORLD_H);
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+}
+
+function drawWorldBorder(ctx) {
+  ctx.strokeStyle = '#1a3a10';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
+  ctx.strokeStyle = '#4a8f35';
   ctx.lineWidth = 1;
-
-  const startX = Math.floor(cam.x / 32) * 32;
-  const endX = cam.x + VIEW_W;
-  const startY = Math.floor(cam.y / 32) * 32;
-  const endY = cam.y + VIEW_H;
-
-  for (let x = startX; x <= endX; x += 32) {
-    ctx.beginPath();
-    ctx.moveTo(x, cam.y);
-    ctx.lineTo(x, endY);
-    ctx.stroke();
-  }
-
-  for (let y = startY; y <= endY; y += 32) {
-    ctx.beginPath();
-    ctx.moveTo(cam.x, y);
-    ctx.lineTo(endX, y);
-    ctx.stroke();
-  }
+  ctx.strokeRect(1, 1, WORLD_W - 2, WORLD_H - 2);
 }
 
 // Input handling
@@ -92,6 +141,19 @@ canvas.addEventListener('click', (e) => {
     fireBullet(state);
   } else if (state.screen === 'menu') {
     state.screen = 'playing';
+    state.wave = 1;
+    state.score = 0;
+    state.player.x = WORLD_W / 2 - 8;
+    state.player.y = WORLD_H / 2 - 8;
+    state.player.hp = 3;
+    state.player.invincible = false;
+    state.player.invTimer = 0;
+    state.player.lastShotTime = 0;
+    state.player.moving = false;
+    state.bullets = [];
+    state.powerUps = [];
+    state.camera.x = WORLD_W / 2 - VIEW_W / 2;
+    state.camera.y = WORLD_H / 2 - VIEW_H / 2;
     generateObstacles(state);
     spawnWave(state);
     playReload();
@@ -201,7 +263,7 @@ function gameLoop(currentTime) {
     prevScreen = state.screen;
   }
 
-  ctx.fillStyle = '#0d1117';
+  ctx.fillStyle = '#0f1a0a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.imageSmoothingEnabled = false;
 
@@ -209,7 +271,6 @@ function gameLoop(currentTime) {
   const worldMouse = screenToWorld(state.mouse.x, state.mouse.y, cam);
 
   if (state.screen === 'menu') {
-    drawPixelGrid(ctx, { x: 0, y: 0 });
     drawMenu(ctx, canvas);
   } else if (state.screen === 'playing') {
     updatePlayer(state, deltaTime);
@@ -230,7 +291,9 @@ function gameLoop(currentTime) {
     ctx.save();
     ctx.translate(-cam.x, -cam.y);
 
-    drawPixelGrid(ctx, cam);
+    drawGround(ctx, cam);
+    drawPaths(ctx, state.decorations);
+    drawWorldBorder(ctx);
     drawObstacles(ctx, state.obstacles);
     drawPlayer(ctx, state.player, worldMouse.x, worldMouse.y);
     drawEnemies(ctx, state.enemies);
@@ -270,7 +333,9 @@ function gameLoop(currentTime) {
       ctx.save();
       ctx.translate(-cam.x, -cam.y);
 
-      drawPixelGrid(ctx, cam);
+      drawGround(ctx, cam);
+      drawPaths(ctx, state.decorations);
+      drawWorldBorder(ctx);
       drawObstacles(ctx, state.obstacles);
       drawPlayer(ctx, state.player, worldMouse.x, worldMouse.y);
       drawBullets(ctx, state.bullets);

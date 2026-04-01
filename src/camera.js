@@ -1,7 +1,7 @@
 export const WORLD_W = 1600;
 export const WORLD_H = 1200;
-export const VIEW_W = 640;
-export const VIEW_H = 480;
+export const VIEW_W = 960;
+export const VIEW_H = 720;
 
 const LERP = 0.08;
 

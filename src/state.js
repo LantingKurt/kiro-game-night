@@ -26,6 +26,7 @@ export function createGameState() {
     enemies: [],
     bullets: [],
     obstacles: [],
+    decorations: [],
     powerUps: [],
     powerUpOptions: [],
     keys: new Set(),

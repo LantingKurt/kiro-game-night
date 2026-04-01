@@ -1,90 +1,79 @@
 # Pixel Survivor
 
-A retro-style survival shooter game built with vanilla JavaScript and Vite.
+A top-down zombie survival game built with vanilla JavaScript and HTML5 Canvas.
 
-## Features
+Survive waves of zombies, collect power-ups, and climb the leaderboard.
 
-- 8-directional WASD movement
-- Mouse aim and shoot mechanics
-- Wave-based enemy spawning with increasing difficulty
-- Score tracking and leaderboard (powered by Supabase)
-- Pixel art graphics rendered with canvas
-- Invincibility frames after taking damage
+## Prerequisites
 
-## Local Development
+- [Node.js](https://nodejs.org/) (v18 or later)
 
-1. Install dependencies:
+## Getting Started
+
 ```bash
+# Install dependencies
 npm install
-```
 
-2. Create a `.env` file with your Supabase credentials:
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-3. Run the dev server:
-```bash
+# Start the dev server
 npm run dev
 ```
 
-## Supabase Setup
+Open the URL printed in the terminal (usually `http://localhost:5173`).
 
-Create a `leaderboard` table with the following schema:
+## How to Play
 
-```sql
-CREATE TABLE leaderboard (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  player_name text NOT NULL,
-  score int4 NOT NULL,
-  wave_reached int4 NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+| Input | Action |
+|-------|--------|
+| **WASD** | Move |
+| **Mouse** | Aim |
+| **Left Click** | Shoot |
+| **Space** (menu) | View leaderboard |
+| **Escape** (leaderboard) | Return to menu |
 
--- Enable RLS
-ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
+- Click anywhere on the menu screen to start a game.
+- Kill all zombies in a wave to advance.
+- After each wave, pick one of three power-ups.
+- Survive as long as you can — your score is based on zombie kills.
 
--- Allow anonymous SELECT
-CREATE POLICY "Allow anonymous select" ON leaderboard
-  FOR SELECT TO anon USING (true);
+### Power-ups
 
--- Allow anonymous INSERT
-CREATE POLICY "Allow anonymous insert" ON leaderboard
-  FOR INSERT TO anon WITH CHECK (true);
+| Power-up | Effect |
+|----------|--------|
+| Speed Boost | Move faster |
+| Rapid Fire | Shorter cooldown between shots |
+| Triple Shot | Fire three bullets in a spread |
+| Big Bullets | Larger, higher-damage projectiles |
+| Piercing | Bullets pass through enemies |
+| Shield | Gain extra HP |
+
+## Build for Production
+
+```bash
+npm run build
+npm run preview   # preview the production build locally
 ```
 
-## GitHub Pages Deployment
+Output is written to the `dist/` folder.
 
-1. Update `vite.config.js` with your repository name:
-```js
-base: '/your-repo-name/'
+## Project Structure
+
 ```
-
-2. Add secrets to your GitHub repository:
-   - Go to Settings > Secrets and variables > Actions
-   - Add `VITE_SUPABASE_URL`
-   - Add `VITE_SUPABASE_ANON_KEY`
-
-3. Enable GitHub Pages:
-   - Go to Settings > Pages
-   - Source: GitHub Actions
-
-4. Push to main branch to trigger deployment
-
-## Controls
-
-- **WASD**: Move player
-- **Mouse**: Aim
-- **Click**: Shoot
-- **Space** (on menu): View leaderboard
-- **ESC** (on leaderboard): Return to menu
-
-## Game Mechanics
-
-- Start with 3 lives (hearts)
-- Enemies spawn in waves from canvas edges
-- Each wave increases enemy count and speed
-- Score +10 per enemy killed
-- 1.5 second invincibility after taking damage
-- 3 second break between waves
+src/
+  main.js        Game loop, rendering, input handling
+  state.js       Game state initialization
+  camera.js      Camera system and world/viewport constants
+  player.js      Player movement and drawing
+  enemy.js       Zombie spawning, AI, and drawing
+  bullet.js      Bullet updates and drawing
+  obstacle.js    Environment generation (walls, houses, trees, bushes, paths)
+  collision.js   AABB collision detection
+  wave.js        Wave progression logic
+  powerup.js     Power-up definitions and application
+  hud.js         Score, wave, and HP display
+  screens.js     Menu, game over, leaderboard, and power-up selection screens
+  sprites.js     Sprite loading, animation, and metadata
+  audio.js       Sound effect loading and playback
+  supabase.js    Leaderboard backend integration
+sprites/         Sprite assets (zombie, guns, main character)
+sounds/          Audio assets (gunshot, reload, zombie ambience)
+```

@@ -1,27 +1,31 @@
 import { getSprite, getAnimFrame, ZOMBIE_SHEET } from './sprites.js';
-import { VIEW_W, VIEW_H } from './camera.js';
+import { WORLD_W, WORLD_H, VIEW_W, VIEW_H } from './camera.js';
 
-const SPAWN_MARGIN = 50;
+const MIN_DIST_FROM_PLAYER = 350;
+const WORLD_MARGIN = 20;
 
 export function spawnWave(state) {
-  const { wave, enemies, camera } = state;
+  const { wave, enemies, player } = state;
   const enemyCount = 3 + (wave * 2);
   const enemySpeed = 60 + (wave * 8);
 
   enemies.length = 0;
 
-  for (let i = 0; i < enemyCount; i++) {
-    const edge = Math.floor(Math.random() * 4);
-    let x, y;
-    const camX = camera.x;
-    const camY = camera.y;
+  const px = player.x + player.width / 2;
+  const py = player.y + player.height / 2;
 
-    switch (edge) {
-      case 0: x = camX + Math.random() * VIEW_W; y = camY - SPAWN_MARGIN; break;
-      case 1: x = camX + VIEW_W + SPAWN_MARGIN; y = camY + Math.random() * VIEW_H; break;
-      case 2: x = camX + Math.random() * VIEW_W; y = camY + VIEW_H + SPAWN_MARGIN; break;
-      case 3: x = camX - SPAWN_MARGIN; y = camY + Math.random() * VIEW_H; break;
-    }
+  for (let i = 0; i < enemyCount; i++) {
+    let x, y;
+    let attempts = 0;
+
+    do {
+      x = WORLD_MARGIN + Math.random() * (WORLD_W - WORLD_MARGIN * 2);
+      y = WORLD_MARGIN + Math.random() * (WORLD_H - WORLD_MARGIN * 2);
+      attempts++;
+    } while (
+      Math.sqrt((x - px) ** 2 + (y - py) ** 2) < MIN_DIST_FROM_PLAYER &&
+      attempts < 100
+    );
 
     enemies.push({
       x, y,
