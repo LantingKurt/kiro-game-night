@@ -1,12 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Public fallback values keep GitHub Pages leaderboard working even if CI env vars are missing.
+const FALLBACK_SUPABASE_URL = 'https://bavplagsmahjeofiqjay.supabase.co';
+const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_61crTTCFOWdssiJvdmu98w_RW_Ar1sh';
+
+const envSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const envSupabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+
+const supabaseUrl = envSupabaseUrl || FALLBACK_SUPABASE_URL;
+const supabaseAnonKey = envSupabaseAnonKey || FALLBACK_SUPABASE_ANON_KEY;
 
 let supabase = null;
 
 // Only create client if credentials are provided
-if (supabaseUrl && supabaseAnonKey && 
+if (supabaseUrl && supabaseAnonKey &&
     supabaseUrl !== 'your_supabase_url_here' && 
     supabaseAnonKey !== 'your_supabase_anon_key_here') {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
